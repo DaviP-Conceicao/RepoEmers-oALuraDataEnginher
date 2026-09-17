@@ -1,71 +1,124 @@
-# 🚀 Imersão Alura + Databricks - Data Engineering
+# ✈️ voebem | Pipeline de Dados de Aviação Civil
 
-> 🏗️ **Projeto em andamento** - Imersão de Engenharia de Dados
+> Imersão Alura + Databricks | Arquitetura Medalhão completa
 
-## 📋 Sobre o Projeto
+```
+┌─────────────┐      ┌─────────────┐      ┌─────────────┐
+│   🥉 BRONZE  │ ───▶ │   🥈 SILVER  │ ───▶ │   🥇 GOLD    │
+│   Landing   │      │  Validação  │      │  Analytics  │
+└─────────────┘      └─────────────┘      └─────────────┘
+     CSV                Delta Lake           Star Schema
+  1.014.882           1.014.841 voos         985.524 voos
+   registros          (41 duplicatas)       255 aeroportos
+```
 
-Repositório do projeto desenvolvido durante a **Imersão Alura de Data Engineering**, aplicando conceitos de arquitetura medalhão (Bronze → Silver → Gold) para análise de dados de aviação civil brasileira.
+## 📊 Números do Projeto
 
-## 🗂️ Estrutura do Projeto
+| Métrica | Valor |
+|---------|-------|
+| 🗂️ **Tabelas criadas** | 11 (4 bronze + 4 silver + 3 gold) |
+| 📝 **Colunas documentadas** | 129 COMMENTs aplicados |
+| 🏷️ **Tags de governança** | 38 tags (camada, domínio, consumo) |
+| ✅ **Dados validados** | 985.524 voos (97,1% qualidade) |
+| 🚨 **Quarentena** | 29.317 registros (2,9%) |
+| 📈 **Cobertura lineage** | 100% (bronze → silver → gold) |
 
-### Notebooks Implementados
+## 🏗️ Arquitetura
 
-#### 🥉 Camada Bronze (Ingestão)
-- **`bronze_vra.ipynb`**: Ingestão de dados de voos (VRA - Voos Regulares Ativos) da ANAC
-- **`bronze_referencias.ipynb`**: Ingestão de cadastros de referência
-  - Empresas aéreas (nacionais e estrangeiras)
-  - Aeródromos públicos
-  - Códigos de operação
+### 🥉 Bronze: Ingestão
+```
+CSV files (ANAC)
+  ├─ vra.csv (1.014.882 linhas)         → bronze.vra
+  ├─ empresas_aereas.csv (189 empresas) → bronze.empresas_aereas
+  ├─ aerodromos.csv (278 aeroportos)    → bronze.aerodromos
+  └─ codigos.csv (seed table)           → bronze.codigos_operacao
+```
 
-#### 🥈 Camada Silver (Transformação e Governança)
-- **`Silver - Espelho governado do bronze.ipynb`**: Transformações com tipagem, cálculos e documentação completa
-  - ✅ Tipagem de colunas (timestamps, numéricos)
-  - ✅ Separação de data e hora
-  - ✅ Cálculos de atraso (partida, chegada, recuperação)
-  - ✅ Unificação de cadastros
-  - ✅ 100% de documentação (54 colunas comentadas)
-  - ✅ Metadados e tags de governança
+### 🥈 Silver: Qualidade + Tipagem
+```
+Pipeline de Qualidade:
+  ├─ 01_vra-marcados.sql    → Marca problemas (atraso fora de faixa, ICAO inválido)
+  ├─ 02_vra_auditados.sql   → Aprova (985.524) vs Quarentena (29.317)
+  └─ 03_vra_quarentena.sql  → Isola dados suspeitos
 
-## 📊 Dados Tratados
+Tabelas Governadas:
+  ├─ silver.vra (26 cols)             → Métricas de atraso validadas
+  ├─ silver.empresas (11 cols)        → Cadastro unificado
+  ├─ silver.aerodromos (13 cols)      → Lat/long + classificação
+  └─ silver.codigos_operacao (4 cols) → Dicionário de códigos DI
+```
 
-### Catálogo Unity: `voebem`
+### 🥇 Gold: Analytics
+```
+Modelo Estrela:
+  ├─ gold.fato_voos (985.524 linhas)   → Métricas + dimensões degeneradas
+  ├─ gold.dim_aeroporto (255 registros)→ Brasil (249) + Exterior (6)
+  └─ gold.obt_voos (985.524 linhas)    → Tabela para consumo de IA
+                                          (tudo desnormalizado)
+```
 
-**Schema Bronze:**
-- `bronze.vra` - Voos regulares ativos
-- `bronze.empresas_aereas` - Operadores aéreos
-- `bronze.aerodromos` - Aeroportos públicos
-- `bronze.codigos_operacao` - Seed table de códigos
+## 🔍 Governança
 
-**Schema Silver (4 tabelas governadas):**
-- `silver.vra` (26 colunas) - Etapas de voo com métricas de atraso
-- `silver.empresas` (11 colunas) - Cadastro unificado de operadores
-- `silver.aerodromos` (13 colunas) - Aeródromos com coordenadas
-- `silver.codigos_operacao` (4 colunas) - Dicionário de códigos
+### Documentação validada contra dados
+```python
+# Exemplo: minutos_recuperados
+❌ IA sugeriu: "Positivo indica que chegou adiantado"
+✅ Validado:   "Positivo = chegou MENOS ATRASADO (não no horário)"
 
-## 🎯 Próximos Passos
+Prova: 164.895 voos recuperaram tempo e AINDA ASSIM chegaram atrasados
+```
 
-- [ ] Camada Gold (Agregações e Métricas de Negócio)
-- [ ] Análises de pontualidade
-- [ ] Dashboards e visualizações
-- [ ] Automação e orquestração
+### Tags aplicadas
+| Tabela | Tags |
+|--------|------|
+| `gold.obt_voos` | `camada=gold` `dominio=aviacao` `consumo=genie` `tipo=obt` `consumidor=ia` |
+| `gold.fato_voos` | `camada=gold` `dominio=aviacao` `consumo=bi` `tipo=fato` |
+| `gold.dim_aeroporto` | `camada=gold` `dominio=aviacao` `consumo=bi` `tipo=dimensao` |
 
-## 🛠️ Tecnologias
+### Lineage rastreado
+```
+(volumes CSV)
+    ↓
+bronze.vra ──→ silver.vra ──→ gold.fato_voos ──┐
+                                                 ├──→ gold.obt_voos
+bronze.aerodromos ──→ silver.aerodromos ──→ gold.dim_aeroporto ──┘
+```
 
-- **Databricks** - Plataforma de dados unificada
-- **Apache Spark** - Processamento distribuído
-- **Delta Lake** - Armazenamento confiável
-- **Unity Catalog** - Governança de dados
-- **PySpark & SQL** - Transformações de dados
+## 🚀 Stack
 
-## 📝 Governança de Dados
+| Componente | Tecnologia |
+|------------|------------|
+| **Plataforma** | Databricks (Serverless Compute) |
+| **Processamento** | Apache Spark 3.5 |
+| **Storage** | Delta Lake (Unity Catalog) |
+| **Linguagens** | Python, SQL |
+| **Orquestração** | SQL pipelines (bronze → silver → gold) |
+| **Governança** | Unity Catalog (COMMENTs + Tags + Lineage) |
 
-Todas as tabelas Silver incluem:
-- ✅ Comentários descritivos em todas as colunas
-- ✅ Tags de metadados (camada, domínio, fonte, grão)
-- ✅ Auditoria completa (arquivo origem, timestamps de ingestão/transformação)
-- ✅ Validações de contagem entre camadas
+## 📂 Estrutura de Notebooks
+
+```
+.
+├── bronze_vra.ipynb                      # Ingestão de voos
+├── bronze_referencias.ipynb              # Ingestão de cadastros
+├── Silver - Espelho governado.ipynb      # Transformações Silver
+├── Fatos x Dim Gold.ipynb                # Modelagem estrela
+├── Governancia-gold.ipynb                # COMMENTs + Tags + Lineage
+├── Avaliação do agente.ipynb             # Métricas de qualidade IA
+└── voebem-qualidade-silver/              # Pipeline de qualidade
+    ├── 01_vra-marcados.sql               # Detecção de problemas
+    ├── 02_vra_auditados.sql              # Decisão: aprovar/quarentena
+    └── 03_vra_quarentena.sql             # Isolamento de suspeitos
+```
+
+## 🎯 Diferenciais do Projeto
+
+✅ **Governança para IA**: OBT com 38 colunas documentadas para consumo de LLM  
+✅ **Pipeline de qualidade**: Detecção + auditoria + quarentena automática  
+✅ **Validação semântica**: Descrições testadas contra dados reais (164k exemplos)  
+✅ **Lineage completo**: Rastreabilidade de ponta a ponta (CSV → Gold)  
+✅ **Modelo híbrido**: Fato/Dim para BI + OBT para IA no mesmo catálogo  
 
 ---
 
-**Status**: 🟢 Em desenvolvimento ativo  
-**Fonte de dados**: [ANAC - Agência Nacional de Aviação Civil](https://www.gov.br/anac/)
+**Fonte**: [ANAC - Agência Nacional de Aviação Civil](https://www.gov.br/anac/) | **Status**: ✅ Produção
