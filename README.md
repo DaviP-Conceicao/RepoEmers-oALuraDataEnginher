@@ -131,15 +131,15 @@ O agente usa 4 SQL examples como referência:
 ### Capturas do Agente em Ação
 
 #### Interface Principal
-![VoeBem Analytics - Interface](./docs/images/voebem-interface.png)
+![VoeBem Analytics - Interface](https://raw.githubusercontent.com/DaviP-Conceicao/RepoEmers-oALuraDataEnginher/main/docs/images/voebem-interface.png)
 *Tela inicial com starter questions e configuração do agente*
 
 #### Exemplo de Resposta
-![Análise de Melhores Horários](./docs/images/voebem-resposta-horarios.png)
+![Análise de Melhores Horários](https://raw.githubusercontent.com/DaviP-Conceicao/RepoEmers-oALuraDataEnginher/main/docs/images/voebem-resposta-horarios.png)
 *Resposta com insights sobre melhores horários para pegar voo*
 
 #### Visualização Gerada
-![Top 10 Horários por Pontualidade](./docs/images/voebem-chart-horarios.png)
+![Top 10 Horários por Pontualidade](https://raw.githubusercontent.com/DaviP-Conceicao/RepoEmers-oALuraDataEnginher/main/docs/images/voebem-chart-horarios.png)
 *Gráfico de barras mostrando os horários com maior pontualidade*
 
 ### Diferenciais do Agente
